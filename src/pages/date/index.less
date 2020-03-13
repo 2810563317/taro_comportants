@@ -1,0 +1,30 @@
+.time_content{
+  margin: 20px 0;
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: center;
+  .time{
+    border: 1px solid #409EFF;
+    padding: 10px 20px;
+    border-radius: 15px;
+  }
+}
+.datePick_mask{
+  position: fixed;
+  top:0;
+  left: 0;
+  width: 100vw;
+  height:100vh;
+  background-color: rgba(0,0,0,.5);
+  z-index: 1;
+  .datePick_content{
+    position: absolute;
+    bottom:0;
+    left:0;
+    height:50vh;
+    width:100vw;
+    background-color: #fff;
+    z-index: 2;
+  }
+}

@@ -21,7 +21,6 @@ export default class Index extends Component {
     console.log('titleClick', e)
   }
   pickChange(e){
-    console.log(222, e.value)
     this.setState({pickVal: e.value})
   }
   render () {
@@ -44,17 +43,17 @@ export default class Index extends Component {
           // barCancelColor = 'red'
           // barConfirmColor = 'red'
           format='YYYY-MM-DD'
-          // format='YYYY-MM hh:mm'
+          // format='YYYY-MM-DD hh:mm'
           // format='YYYY'
           // format='MM'
           // format='hh:mm'
           onChange={this.pickChange.bind(this)}
           value={pickVal}
           renderHtml={
-            <View className='custorm_date'>{pickVal ? pickVal : 'picker'}</View>
+            <View className='custorm_date'>{pickVal ? `${pickVal[0]} - ${pickVal[1]}` : 'picker'}</View>
           }
         />
-        <Picker>
+        <Picker mode='date'>
           time
         </Picker>
       </View>

@@ -1,4 +1,4 @@
-import { View, PickerView, PickerViewColumn, Block } from '@tarojs/components';
+import { View, PickerView, PickerViewColumn, Block, Text } from '@tarojs/components';
 import Taro, { useCallback, useEffect, useState } from '@tarojs/taro';
 import './index.less'
 /**
@@ -11,22 +11,24 @@ import './index.less'
  * end: 截止时间
  * start：开始时间
  * value: 传入值
+ * showToast: 是否提示
  * onChange: 返回方法
 */
 const BADECOLOC = '#4A90E2'
 const BORDERCOLOR = '#f2f2f2'
 function DatePicker(props) {
-    const [showPicker, setShowPicker] = useState(true);
+    const [showPicker, setShowPicker] = useState(false);
     const TODAY = new Date()
     const todayDatas = {
       todayY: `${TODAY.getFullYear()}`,
       todayM: `${('0' + (TODAY.getMonth() + 1)).slice(-2)}`,
       todayD:`${('0' + (TODAY.getDate())).slice(-2)}`,
       todayH: `${('0' + (TODAY.getHours())).slice(-2)}`,
-      todayMi: `${('0' + (TODAY.getMinutes())).slice(-2)}`,
+      todayMi: `${('0' + (TODAY.getMinutes())).slice(-2)}`
     }
+    const [todayValueList, setTodayValueList] = useState(null)
     const [format, setFormat] = useState({})
-    const [list, setList] = useState({})
+    const [lists, setList] = useState({})
     const [year, setyear] = useState([])
     const [month, setmonth] = useState([])
     const [days, setdays] = useState(() => [])
@@ -38,25 +40,26 @@ function DatePicker(props) {
     const [prevPicker, setPrevPicker] = useState(null)
     const [startDate, setStartDate] = useState([])
     const [endDate, setEndDate] = useState([])
+    const [compare, setCompare] = useState(false)
 
     useEffect(() => {
       showPicker ? setList(getBaseList()) : {}
       showPicker ? setFormat(getFormat()) : {}
     }, [showPicker])
     useEffect(() => {
-      Object.keys(list).length ? setyear(list.yearList) : []
-    }, [list])
+      Object.keys(lists).length ? setyear(lists.yearList) : []
+    }, [lists])
     useEffect(() => {
-      year.length ? setmonth(list.monthList) : []
+      year.length ? setmonth(lists.monthList) : []
     }, [year])
     useEffect(() => {
-      month.length ? setdays(list.daysList) : []
+      month.length ? setdays(lists.daysList) : []
     }, [month])
     useEffect(() => {
-      days.length ? sethours(list.hoursList) : []
+      days.length ? sethours(lists.hoursList) : []
     }, [days])
     useEffect(() => {
-      hours.length ? setminutes(list.minutesList) : []
+      hours.length ? setminutes(lists.minutesList) : []
     }, [hours])
     useEffect(() => {
       if (minutes.length) {
@@ -74,13 +77,24 @@ function DatePicker(props) {
           const list = rangeList
           rangeSelect === 0 ? list[0] = currentVal : list[1] = currentVal
           list.length === 1 ? list[1] = currentVal : null
-          compareDate(list) ? setPickerValue(prevPicker) : setRangeList(list)
+          const compareD = compareDate(list)
+          if (compareD) {
+            setPickerValue(prevPicker)
+            if (compare) {
+              setCompare(false)
+              props.showToast ? toast('开始时间不能大于结束时间') : false
+            }
+          } else{
+            setCompare(false)
+            setRangeList(list)
+          }
           if(startDate.length || endDate.length) {
             const start = startDate
             const end = endDate
             hasStartEnd(list, start, end)
           }
         } else {
+          setCompare(false)
           if(startDate.length || endDate.length) {
             const start = startDate
             const end = endDate
@@ -100,6 +114,7 @@ function DatePicker(props) {
       const val = e.detail.value
       setPrevPicker(pickerValue)
       setPickerValue(val)
+      props.showToast && setCompare(true)
       const currentDateNum = new Date(year[val[0]], month[val[1]], 0).getDate()
       setdays(getList(1, currentDateNum))
     }, [pickerValue])
@@ -108,6 +123,7 @@ function DatePicker(props) {
     */
     function hasStartEnd(list, start, end) {
       if (start.length && compareDate([props.start, list[0]])){
+        setCompare(false)
         if (compareDate([props.start, list[1]])) {
           setRangeList([props.start, props.start])
           setPrevPicker(start)
@@ -119,6 +135,7 @@ function DatePicker(props) {
         }
       }
       if (end.length && compareDate([list[1], props.end])){
+        props.showToast ? isGreaterThanToday() : setCompare(false)
         if (compareDate([props.end, list[0]])) {
           setRangeList([list[0], props.end])
           rangeSelect === 0 ? null : setPickerValue(end)
@@ -131,9 +148,29 @@ function DatePicker(props) {
       }
     }
 
-    function formatValue(){
+    function isGreaterThanToday(){
+      if (compare) {
+        const val = formatValue(valueMapFormat(todayValueList))
+        if (!compareDate([props.end, val]) && !compareDate([val, props.end])) {
+          setCompare(false)
+          toast('选择的时间不能大于当前时间')
+        }
+      }
+    }
+    function toast (title = '') {
+      setTimeout(() => {
+        Taro.showToast({
+          title,
+          duration : 2000,
+          icon: 'none',
+          mask: true
+        })
+      }, 300)
+    }
+    function formatValue(val = null){
       let data3 = []
-      const dataList = pickerMapValue()
+      const pickVal = val ? val : pickerValue
+      const dataList = pickerMapValue(pickVal)
       dataList.data1.length && data3.push(dataList.data1.join('-'))
       dataList.data2.length && data3.push(dataList.data2.join(':'))
       return data3.join(' ')
@@ -162,7 +199,9 @@ function DatePicker(props) {
       return props.format && props.format.indexOf(cur) > -1
     }
 
-    // 判断起始时间是否大于结束时间
+    /**
+     * 判断起始时间是否大于结束时间
+    */
     function compareDate (list) {
       return new Date(list[0].replace(/-/g,"\/")) > new Date(list[1].replace(/-/g,"\/"))
     }
@@ -193,8 +232,10 @@ function DatePicker(props) {
      * 根据传入的数据匹配picker下标
     */
     function showPropsValue () {
+      const todayPick = [year.indexOf(todayDatas.todayY), month.indexOf(todayDatas.todayM), days.indexOf(todayDatas.todayD), hours.indexOf(todayDatas.todayH), minutes.indexOf(todayDatas.todayMi)]
+      todayValueList ? false : setTodayValueList(todayPick)
       if (props.value === null || props.value === ''){
-        return [year.indexOf(todayDatas.todayY), month.indexOf(todayDatas.todayM), days.indexOf(todayDatas.todayD), hours.indexOf(todayDatas.todayH), minutes.indexOf(todayDatas.todayMi)]
+        return todayPick
       } else {
         return props.rangerDate ? valueToPicker(props.value[0]) : valueToPicker(props.value)
       }
@@ -261,45 +302,45 @@ function DatePicker(props) {
     /**
      * 返回数据是按格式匹配
     */
-    function pickerMapValue(){
+    function pickerMapValue(pickVal){
       const split1 = props.format.split(" ")
       let data1 = [], data2 = []
       if(split1.length === 2) {
-        data1=YMHMap(split1[0].split("-"))
-        data2=HMMap(split1[1].split(":"), data1.length)
+        data1=YMHMap(split1[0].split("-"), pickVal)
+        data2=HMMap(split1[1].split(":"), data1.length, pickVal)
       }else if(format.isHours || format.isMinutes) {
-        data2=HMMap(split1[0].split(":"), 0)
+        data2=HMMap(split1[0].split(":"), 0, pickVal)
       } else {
-        data1=YMHMap(split1[0].split("-"))
+        data1=YMHMap(split1[0].split("-"), pickVal)
       }
       return {data1, data2}
     }
-    function HMMap(split, length) {
+    function HMMap(split, length, pickVal) {
       let data1 = []
       if(split.length === 2) {
-        data1.push(hours[pickerValue[0 + length]])
-        data1.push(minutes[pickerValue[1 + length]])
+        data1.push(hours[pickVal[0 + length]])
+        data1.push(minutes[pickVal[1 + length]])
       } else {
-        format.isHours ? data1.push(hours[pickerValue[0 + length]]) : data1.push(minutes[pickerValue[0+ length]])
+        format.isHours ? data1.push(hours[pickVal[0 + length]]) : data1.push(minutes[pickVal[0+ length]])
       }
       return data1
     }
-    function YMHMap(split3) {
+    function YMHMap(split3, pickVal) {
       let data1 = []
       if(split3.length === 3) {
-        data1.push(year[pickerValue[0]])
-        data1.push(month[pickerValue[1]])
-        data1.push(days[pickerValue[2]])
+        data1.push(year[pickVal[0]])
+        data1.push(month[pickVal[1]])
+        data1.push(days[pickVal[2]])
       } else if(split3.length === 2){
         if(format.isYear){
-          data1.push(year[pickerValue[0]])
-          data1.push(month[pickerValue[1]])
+          data1.push(year[pickVal[0]])
+          data1.push(month[pickVal[1]])
         } else {
-          data1.push(month[pickerValue[0]])
-          data1.push(days[pickerValue[1]])
+          data1.push(month[pickVal[0]])
+          data1.push(days[pickVal[1]])
         }
       } else {
-        format.isYear ? data1.push(year[pickerValue[0]]) : (format.isMonth ? data1.push(month[pickerValue[0]]) : data1.push(days[pickerValue[0]]))
+        format.isYear ? data1.push(year[pickVal[0]]) : (format.isMonth ? data1.push(month[pickVal[0]]) : data1.push(days[pickVal[0]]))
       }
       return data1
     }
@@ -407,6 +448,7 @@ function DatePicker(props) {
     format: 'YYYY-MM-DD',
     bartitle: '',
     rangerDate: false,
+    showToast: false,
     onChange: () => {}
   }
   export default Taro.memo(DatePicker)

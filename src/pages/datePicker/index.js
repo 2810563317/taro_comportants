@@ -8,6 +8,8 @@ import './index.less'
  * barCancelColor： 取消按钮颜色
  * barConfirmColor： 确认按钮和范围选中颜色
  * renderHtml: 选择器包裹的内容
+ * end: 截止时间
+ * start：开始时间
  * value: 传入值
  * onChange: 返回方法
 */
@@ -33,7 +35,9 @@ function DatePicker(props) {
     const [pickerValue, setPickerValue] = useState({})
     const [rangeList, setRangeList] = useState([])
     const [rangeSelect, setRangeSelect] = useState(0)
-    const [prevPicker, setPrevPicker] = useState([])
+    const [prevPicker, setPrevPicker] = useState(null)
+    const [startDate, setStartDate] = useState([])
+    const [endDate, setEndDate] = useState([])
 
     useEffect(() => {
       showPicker ? setList(getBaseList()) : {}
@@ -55,23 +59,37 @@ function DatePicker(props) {
       hours.length ? setminutes(list.minutesList) : []
     }, [hours])
     useEffect(() => {
-      minutes.length ? setPickerValue(valueMapFormat(showPropsValue())) : []
-      minutes.length && props.rangerDate && props.value && props.value.length ? setRangeList(props.value) : null
+      if (minutes.length) {
+        props.rangerDate && props.value && props.value.length ? setRangeList(props.value) : null
+        props.start && setStartDate(valueMapFormat(valueToPicker(props.start)))
+        props.end && setEndDate(valueMapFormat(valueToPicker(props.end)))
+        setPickerValue(valueMapFormat(showPropsValue()))
+      }
     }, [minutes])
     
     useEffect(() => {
-      if(props.rangerDate && minutes.length){
-        const list = rangeList
-        rangeSelect === 0 ? list[0] = formatValue() : list[1] = formatValue()
-        list.length === 1 ? list[1] = formatValue() : null
-        compareDate(list) ? setPickerValue(prevPicker) : setRangeList(list)
+      if(minutes.length){
+        const currentVal = formatValue()
+        if(props.rangerDate) {
+          const list = rangeList
+          rangeSelect === 0 ? list[0] = currentVal : list[1] = currentVal
+          list.length === 1 ? list[1] = currentVal : null
+          compareDate(list) ? setPickerValue(prevPicker) : setRangeList(list)
+          if(startDate.length || endDate.length) {
+            const start = startDate
+            const end = endDate
+            hasStartEnd(list, start, end)
+          }
+        } else {
+          if(startDate.length || endDate.length) {
+            const start = startDate
+            const end = endDate
+            start.length ? (compareDate([props.start, currentVal]) ? setPickerValue(start) : null) : null
+            end.length ? (compareDate([currentVal, props.end]) ? setPickerValue(end) : null) : null
+          }
+        }
       }
     }, [pickerValue])
-
-    // 判断起始时间是否大于结束时间
-    function compareDate (list) {
-      return new Date(list[0].replace(/-/g,"\/")) > new Date(list[1].replace(/-/g,"\/"))
-    }
 
     const returnPickVal = useCallback(() => {
       setShowPicker(false)
@@ -85,6 +103,33 @@ function DatePicker(props) {
       const currentDateNum = new Date(year[val[0]], month[val[1]], 0).getDate()
       setdays(getList(1, currentDateNum))
     }, [pickerValue])
+    /**
+     * 判断所选时间是否超出限定的时间范围
+    */
+    function hasStartEnd(list, start, end) {
+      if (start.length && compareDate([props.start, list[0]])){
+        if (compareDate([props.start, list[1]])) {
+          setRangeList([props.start, props.start])
+          setPrevPicker(start)
+          setPickerValue(start)
+        } else {
+          setRangeList([props.start, list[1]])
+          rangeSelect === 0 ? setPickerValue(start) : null
+          setPrevPicker(start)
+        }
+      }
+      if (end.length && compareDate([list[1], props.end])){
+        if (compareDate([props.end, list[0]])) {
+          setRangeList([list[0], props.end])
+          rangeSelect === 0 ? null : setPickerValue(end)
+          setPrevPicker(end)
+        }else {
+          setRangeList([props.end, props.end])
+          setPickerValue(end)
+          setPrevPicker(end)
+        }
+      }
+    }
 
     function formatValue(){
       let data3 = []
@@ -93,6 +138,7 @@ function DatePicker(props) {
       dataList.data2.length && data3.push(dataList.data2.join(':'))
       return data3.join(' ')
     }
+
     function onShowPick(){
       setRangeSelect(0)
       setShowPicker(true)
@@ -115,6 +161,12 @@ function DatePicker(props) {
     function isInclude(cur){
       return props.format && props.format.indexOf(cur) > -1
     }
+
+    // 判断起始时间是否大于结束时间
+    function compareDate (list) {
+      return new Date(list[0].replace(/-/g,"\/")) > new Date(list[1].replace(/-/g,"\/"))
+    }
+    
     /**
      * 获取基础数据
     */
@@ -349,6 +401,8 @@ function DatePicker(props) {
     )
   }
   DatePicker.defaultProps = {
+    end: null,
+    start: null,
     value: '',
     format: 'YYYY-MM-DD',
     bartitle: '',

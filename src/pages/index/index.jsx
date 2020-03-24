@@ -47,6 +47,8 @@ export default class Index extends Component {
           // format='YYYY'
           // format='MM'
           // format='hh:mm'
+          start='2020-02-20'
+          end='2020-03-20'
           onChange={this.pickChange.bind(this)}
           value={pickVal}
           renderHtml={

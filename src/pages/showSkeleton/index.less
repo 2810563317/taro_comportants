@@ -1,0 +1,24 @@
+.skeleton_wrap{
+  background-color: #f2f2f2;
+  box-sizing: border-box;
+  min-height: 100vh;
+  width: 100vw;
+  padding-top:15px;
+}
+.item_wrap{
+  box-sizing: border-box;
+  display: inline-block;
+  width: 50vw;
+  &:nth-of-type(odd){
+    padding: 5px 10px 5px 20px;
+  }
+  &:nth-of-type(even){
+    padding: 5px 20px 5px 10px;
+  }
+  .item{
+    display: inline-block;
+    width: 100%;
+    background: #fff;
+    height: 500px;
+  }
+}

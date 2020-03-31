@@ -2,9 +2,8 @@ import Taro, { Component } from '@tarojs/taro'
 import { View, Text, Block , Picker} from '@tarojs/components'
 import './index.less'
 import TitleTost from '../titleTost'
-import DateDiffer from '../date'
+import DateDiffer from '../dateDiffer'
 import DatePicker from '../datePicker'
-
 export default class Index extends Component {
   constructor(props) {
     super(props)
@@ -23,13 +22,18 @@ export default class Index extends Component {
   pickChange(e){
     this.setState({pickVal: e.value})
   }
+  navigateToSkeleton(){
+    Taro.navigateTo({
+      url: '/pages/showSkeleton/index'
+    })
+  }
   render () {
     const titles = [
       {title: 'titleTost1', titlebg: 'orange'},
       {title: 'titleTost2', titlebg: 'pink'},
       {title: 'titleTost3 可点', titlebg: '#ccc', titleFun: this.onTitleClick}
     ]
-    const {pickVal} = this.state
+    const {pickVal, dataList} = this.state
     return (
       <View className='index'>
         {/* <TitleTost titles={titles}/> */}
@@ -37,28 +41,18 @@ export default class Index extends Component {
           <DateDiffer />
         </View>
         <DatePicker
-          // format='YYYY-MM-DD hh:mm'
           bartitle = '日期选择'
           rangerDate = {true}
-          // barCancelColor = 'red'
-          // barConfirmColor = 'red'
           format='YYYY-MM-DD'
-          // format='YYYY-MM-DD hh:mm'
-          // format='YYYY'
-          // format='MM'
-          // format='hh:mm'
-          // showToast={true}
           start='2020-02-20'
           end='2020-03-24'
           onChange={this.pickChange.bind(this)}
           value={pickVal}
           renderHtml={
-            <View className='custorm_date'>{pickVal ? `${pickVal[0]} - ${pickVal[1]}` : 'picker'}</View>
+            <View className='custorm_item'>{pickVal ? `${pickVal[0]} - ${pickVal[1]}` : 'picker'}</View>
           }
         />
-        <Picker mode='date'>
-          time
-        </Picker>
+        <View className='custorm_item' onClick={this.navigateToSkeleton.bind(this)}>骨架屏</View>
       </View>
     )
   }

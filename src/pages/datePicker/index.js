@@ -82,8 +82,8 @@ function DatePicker(props) {
             setPickerValue(prevPicker)
             if (compare) {
               setCompare(false)
-              props.showToast ? toast('开始时间不能大于结束时间') : false
-            }
+              rangeSelect === 0 ? setPickerValue(valueMapFormat(valueToPicker(rangeList[1]))) : setPickerValue(valueMapFormat(valueToPicker(rangeList[0])))
+              rangeSelect === 0 ? setRangeList([rangeList[1],rangeList[1]]) : setRangeList([rangeList[0],rangeList[0]])            }
           } else{
             setCompare(false)
             setRangeList(list)
